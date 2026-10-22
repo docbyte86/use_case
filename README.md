@@ -88,11 +88,25 @@ docker run --rm healthcheck-service:latest
 * **Metriken & Tracing:** ...
 * **Logging:** ...
 
+1. Monitoring & Observability:
+
+Metriken: Das Skript als Prometheus-Exporter erweitern bzw. die Metriken (completion_rate, status) im Prometheus-Format über einen /metrics-Endpunkt oder via Pushgateway bereitstellen; Grafana-Dashboard darauf.
+Tracing/OpenTelemetry: Den API-Call mit OpenTelemetry instrumentieren, um Latenz und Fehler der externen Abhängigkeit zu sehen.
+Logging: Strukturierte JSON-Logs (statt print) nach stdout, von einem Collector (z.B. Loki/Promtail) eingesammelt und in Grafana korreliert.
+Alerting: Bei Status WARNING einen Alert über Alertmanager auslösen.
+
 ### 2. Secret Management
 
 * **CI/CD Pipeline:** ...
 * **Runtime:** ...
 
+CI/CD: Secrets (API-Tokens, Webhook-URLs) als GitHub Actions Secrets hinterlegen, nie im Code – im Workflow über ${{ secrets.MEIN_TOKEN }} referenziert. Niemals ins Repo committen.
+Runtime: Zur Laufzeit über Umgebungsvariablen injizieren; in Kubernetes über Secrets (und idealerweise einen externen Secret-Store wie Vault / den Cloud-Secret-Manager), nicht im Image.
+
 ### 3. Orchestrierung & Scheduling
 
 * **Plattform-Integration:** ...
+
+Als wiederkehrender Check: Kubernetes CronJob (läuft das Image periodisch) – passt gut, weil das Skript kurz läuft und terminiert.
+Alternativ Rundeck oder n8n als Job/Workflow, der das Skript nach Zeitplan oder per Trigger ausführt – mit Self-Service und Audit-Trail.
+Event-getrieben über StackStorm: bei WARNING automatisch eine Remediation auslösen.
