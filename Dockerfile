@@ -11,4 +11,17 @@ WORKDIR /app
 
 # --- DEIN DOCKERFILE HIER ---
 
+# Non-Root-User anlegen und nutzen (Sicherheit)
+RUN useradd --create-home appuser
+
+# Erst nur requirements kopieren und installieren (Layer-Caching)
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Dann den Code
+COPY main.py .
+
+# Auf den Non-Root-User wechseln
+USER appuser
+
 CMD ["python", "main.py"]
