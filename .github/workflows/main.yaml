@@ -1,0 +1,69 @@
+name: Healthcheck Service CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: healthcheck-service
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v4
+
+      # 1. Set up language/environment (Python)
+      - name: Set up Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      # 2. Install dependencies & run code checks / unit tests
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install flake8
+
+      - name: Run syntax check, linter, and unit tests
+        run: |
+          # Verify valid Python syntax
+          python -m py_compile main.py
+          # Run flake8 linter
+          flake8 main.py --max-line-length=100
+          # Unit test evaluate_todos logic
+          python -c "
+          from main import evaluate_todos
+          assert evaluate_todos([{'completed': True}, {'completed': False}], 0.60)['status'] == 'HEALTHY'
+          assert evaluate_todos([{'completed': False}, {'completed': False}], 0.60)['status'] == 'WARNING'
+          assert evaluate_todos([])['status'] == 'HEALTHY'
+          print('Unit tests passed successfully!')
+          "
+
+      # 3. Build Docker image
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ env.IMAGE_NAME }}:${{ github.sha }} -t ${{ env.IMAGE_NAME }}:latest .
+
+      # 4. Run / test container
+      - name: Run and test Docker container
+        run: |
+          docker run --rm ${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      # 5. Simulated deployment & status notification (required by task 2)
+      - name: Simulate deployment and trigger status notification
+        run: |
+          echo "Deploying ${{ env.IMAGE_NAME }}:${{ github.sha }} to target environment..."
+          echo '{"event": "deployment_succeeded", "service": "${{ env.IMAGE_NAME }}", "commit": "${{ github.sha }}", "status": "HEALTHY"}'
+      # TODO für Bewerber:
+      # 1. Sprache/Environment aufsetzen (z. B. Python)
+      # 2. Dependencies installieren
+      # 3. Docker Image bauen
+      # 4. Container ausführen / testen
